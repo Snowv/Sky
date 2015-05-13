@@ -3,6 +3,10 @@
 #git clone https://github.com/Snowv/Sky.git
 #git add rvsh.sh 
 #git commit -m "Description du commit"
+#git log -p HEAD..FETCH_HEAD
+#git remote add bob https://github.com/Snowa/Sky-1.git
+#git fetch bob
+#git merge bob/master
 
 programname=$0
 
