@@ -24,4 +24,3 @@ elif [ $1 == "-connect" ]; then
 else
     usage
 fi
-
