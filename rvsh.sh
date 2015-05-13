@@ -1,4 +1,6 @@
 #!/bin/bash
+
+Yo
 programname=$0
 
 function usage {
