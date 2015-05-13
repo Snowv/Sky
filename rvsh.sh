@@ -1,4 +1,9 @@
 #!/bin/bash
+#sudo apt-get install git
+#git clone https://github.com/Snowv/Sky.git
+#git add rvsh.sh 
+#git commit -m "Description du commit"
+
 programname=$0
 
 function usage {
@@ -12,6 +17,18 @@ function usage {
 }
 function admin {
     echo "Fonction administrateur"
+    while [[ true ]]; do
+        read -p ">rvsh " cmd
+        if [ $cmd == "exit" ]; then
+            break;
+        fi
+    done
+}
+function createVirtualMachine {
+
+}
+function removeVirtualMachine {
+
 }
 function connect {
     echo "Focntion connect"
