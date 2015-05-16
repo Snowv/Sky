@@ -47,15 +47,40 @@ function users { # $action $userName $machineName $password
         usage_users
     fi
 }
+function ftest {
+    fichier=infoUtilisateurs.txt
+    path=$(pwd)
+    nomComplet=$path/$fichier
+    echo $t
+    if [ -f $nomComplet ]; then
+        echo "Le fichier existe"
+    else
+        echo "Le fichier n'existe pas"
+        echo $(pwd)
+    fi
+}
 function addUser { 
     if [[ ! -z $1 && ! -z $2 && ! -z $3  ]]; then #test si la chaine est non vide
-        if [[ -d $2 || ! -e $2/users ]]; then
-        grep -q "$1 $2" $2/users
-        if [ $? -ne 0 ]; then
-            echo "$1 $2 $3" >> $2/users
-            echo "Utilisateur $1 ajouté à la machine $2 avec le mdp $3"
-        else
-            echo "Utilisateur et machine déjà renseigné !"
+        if [[ -d $2 ]]; then
+            if [[ -f $2/users ]]; then
+                grep -q "$1 $2" $2/users
+            fi
+            if [[ ! -f $2/users || $? -ne 0 ]]; then
+                echo "$1 $2 $3" >> $2/users
+                if [ -e infoUtilisateurs.txt ]; then
+                    if [[ $(grep $1 infoUtilisateurs.txt | wc -l) -ne 1 ]]; then
+                        pointv=":"
+                        echo "$1$pointv" >> infoUtilisateurs.txt
+                    fi
+                else
+                    pointv=":"
+                    echo "hoho"
+                    echo "$1$pointv" >> infoUtilisateurs.txt
+                    
+                fi
+                echo "Utilisateur $1 ajouté à la machine $2 avec le mdp $3"
+            else
+                echo "Utilisateur et machine déjà renseigné !"
         fi
         else
             echo "La machine $2 n'est pas encore créer"
@@ -71,6 +96,11 @@ function removeUser {
         if [ ! -z $lineNumber ]; then
             d="d"
             sed -i -e "$lineNumber$d" $2/users 
+            #sed -i -e "/$1/d" infoUtilisateurs.txt
+            # nbLigneFichierInfoU=$(wc -l < infoUtilisateurs.txt )
+            # if [[ $nbLigneFichierInfoU -eq 0 ]]; then
+            #    rm infoUtilisateurs.txt
+            #fi
             echo "Accès de l'utilisateur $1 supprimé de la machine $2"
         else
             echo "L'utilisateur n'est pas associé à cette machine"
@@ -89,10 +119,15 @@ function admin {
         cmd=$(echo $line | cut -f1 -d" ")
         case $cmd in
             host )
-action=$(echo $line | cut -f2 -d" ")
-machineName=$(echo $line | cut -f3 -d" ")
-host $action $machineName ;;
+                action=$(echo $line | cut -f2 -d" ")
+                machineName=$(echo $line | cut -f3 -d" ")
+                host $action $machineName ;;
 afinger )
+userName=$(echo $line | cut -f2 -d" ")
+afinger $userName
+;;
+test )
+ftest
 ;;
 users )
 action=$(echo $line | cut -f2 -d" ")
@@ -109,6 +144,16 @@ echo "Commande inconnue"
 esac
 done
 }
+
+function ajouterDescription { 
+    read -p "Entrez la description: " description
+    echo $1 $description
+    ligne=$(grep -n ^$1: infoUtilisateurs.txt | cut -f1 -d':')
+    d="d"
+    cmd=$ligne$d
+    sed -i -e "$cmd" infoUtilisateurs.txt
+    echo "$1:$description" >> infoUtilisateurs.txt
+}
 function host {
     echo $*
     if [[ $(echo $* | wc -w) = 2 && $1 == "create" ]]; then
@@ -118,6 +163,30 @@ function host {
     else
         usage_host
     fi
+}
+function afinger {
+compteur=1
+if [[ -f infoUtilisateurs.txt ]]; then 
+echo "Liste des utilisateurs du réseaux + Description :"
+for ligne in $(cat infoUtilisateurs.txt) ; do
+    user=$(echo $ligne | cut -f1 -d":")
+    desciprion=$(echo $ligne | cut -f2 -d":")
+    echo -e "Utilisateur: $user\tDesciption:\t$desciprion"
+        compteur=$(expr $compteur + 1)
+done
+nbLigne=$(grep $1: infoUtilisateurs.txt | wc -l)
+user=$(echo $ligne | cut -f1 -d":")
+if [[ $nbLigne -eq 1 ]]; then
+    if [[ $(echo $* | wc -w) = 1 ]]; then
+        ajouterDescription $1
+    fi
+else
+    echo "L'utilisateur $1 est inconnu"
+fi
+else
+    echo "Vous n'avez pas encore ajouté des utilisateurs à votre réseau !"
+fi
+
 }
 function createVirtualMachine {
     if [ ! -z $1  ]; then #test si la chaine est non vide
