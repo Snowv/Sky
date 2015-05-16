@@ -212,15 +212,24 @@ function removeVirtualMachine {
         echo "Nom de machine incorrect"
     fi
 }
+function rhost {
+    echo "Liste des machines connectées : "
+    liste=""
+    for i in $(ls); do
+        if [[ -d $i ]]; then
+            liste="$liste $i"
+        fi
+    done
+    echo $liste
+}
 function modeConnect {
   while [[ true ]]; do
     read -p "$1@$2> " line
     cmd=$(echo $line | cut -f1 -d" ")
     case $cmd in
-        host )
-action=$(echo $line | cut -f2 -d" ")
-machineName=$(echo $line | cut -f3 -d" ")
-host $action $machineName ;;
+        rhost )
+rhost
+;;
 finger )
 finger 
 ;;
