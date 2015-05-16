@@ -38,14 +38,14 @@ function usage_users {
     echo "  -help       affiche de l'aide"
 }
 function users { # $action $userName $machineName $password
-    echo "Commande administrateur users "
-    if [[ $(echo $* | wc -w) = 4 && $1 == "add" ]]; then
-        addUser $2 $3 $4 
-    elif [[ $(echo $* | wc -w) = 3 && $1 == "remove" ]]; then
-        removeUser $2 $3
-    else
-        usage_users
-    fi
+echo "Commande administrateur users "
+if [[ $(echo $* | wc -w) = 4 && $1 == "add" ]]; then
+    addUser $2 $3 $4 
+elif [[ $(echo $* | wc -w) = 3 && $1 == "remove" ]]; then
+    removeUser $2 $3
+else
+    usage_users
+fi
 }
 function ftest {
     fichier=infoUtilisateurs.txt
@@ -81,7 +81,7 @@ function addUser {
                 echo "Utilisateur $1 ajouté à la machine $2 avec le mdp $3"
             else
                 echo "Utilisateur et machine déjà renseigné !"
-        fi
+            fi
         else
             echo "La machine $2 n'est pas encore créer"
         fi
@@ -92,10 +92,10 @@ function addUser {
 function removeUser {
     if [[ ! -z $1 && ! -z $2 ]]; then #test si la chaine est non vide
         if [[ -d $2 && -e $2/users ]]; then
-        lineNumber=$(grep -n "$1 $2" $2/users | cut -f1 -d':')
-        if [ ! -z $lineNumber ]; then
-            d="d"
-            sed -i -e "$lineNumber$d" $2/users 
+            lineNumber=$(grep -n "$1 $2" $2/users | cut -f1 -d':')
+            if [ ! -z $lineNumber ]; then
+                d="d"
+                sed -i -e "$lineNumber$d" $2/users 
             #sed -i -e "/$1/d" infoUtilisateurs.txt
             # nbLigneFichierInfoU=$(wc -l < infoUtilisateurs.txt )
             # if [[ $nbLigneFichierInfoU -eq 0 ]]; then
@@ -105,12 +105,12 @@ function removeUser {
         else
             echo "L'utilisateur n'est pas associé à cette machine"
         fi
-        else
-            echo "La machine $2 n'est pas encore créer ou il n'y a pas encore d'utilisateur autorisé à l'utiliser"
-        fi
-    else 
-        echo "Une valeur n'est pas renseigné !"
+    else
+        echo "La machine $2 n'est pas encore créer ou il n'y a pas encore d'utilisateur autorisé à l'utiliser"
     fi
+else 
+    echo "Une valeur n'est pas renseigné !"
+fi
 }
 function admin {
     echo "Commande administrateur"
@@ -119,9 +119,9 @@ function admin {
         cmd=$(echo $line | cut -f1 -d" ")
         case $cmd in
             host )
-                action=$(echo $line | cut -f2 -d" ")
-                machineName=$(echo $line | cut -f3 -d" ")
-                host $action $machineName ;;
+action=$(echo $line | cut -f2 -d" ")
+machineName=$(echo $line | cut -f3 -d" ")
+host $action $machineName ;;
 afinger )
 userName=$(echo $line | cut -f2 -d" ")
 afinger $userName
@@ -146,13 +146,13 @@ done
 }
 
 function ajouterDescription { 
-    read -p "Entrez la description: " description
-    echo $1 $description
-    ligne=$(grep -n ^$1: infoUtilisateurs.txt | cut -f1 -d':')
-    d="d"
-    cmd=$ligne$d
-    sed -i -e "$cmd" infoUtilisateurs.txt
-    echo "$1:$description" >> infoUtilisateurs.txt
+read -p "Entrez la description: " description
+echo $1 $description
+ligne=$(grep -n ^$1: infoUtilisateurs.txt | cut -f1 -d':')
+d="d"
+cmd=$ligne$d
+sed -i -e "$cmd" infoUtilisateurs.txt
+echo "$1:$description" >> infoUtilisateurs.txt
 }
 function host {
     echo $*
@@ -165,27 +165,27 @@ function host {
     fi
 }
 function afinger {
-compteur=1
-if [[ -f infoUtilisateurs.txt ]]; then 
-echo "Liste des utilisateurs du réseaux + Description :"
-for ligne in $(cat infoUtilisateurs.txt) ; do
-    user=$(echo $ligne | cut -f1 -d":")
-    desciprion=$(echo $ligne | cut -f2 -d":")
-    echo -e "Utilisateur: $user\tDesciption:\t$desciprion"
-        compteur=$(expr $compteur + 1)
-done
-nbLigne=$(grep $1: infoUtilisateurs.txt | wc -l)
-user=$(echo $ligne | cut -f1 -d":")
-if [[ $nbLigne -eq 1 ]]; then
-    if [[ $(echo $* | wc -w) = 1 ]]; then
-        ajouterDescription $1
+    compteur=1
+    if [[ -f infoUtilisateurs.txt ]]; then 
+        echo "Liste des utilisateurs du réseaux + Description :"
+        for ligne in $(cat infoUtilisateurs.txt) ; do
+            user=$(echo $ligne | cut -f1 -d":")
+            desciprion=$(echo $ligne | cut -f2 -d":")
+            echo -e "Utilisateur: $user\tDesciption:\t$desciprion"
+            compteur=$(expr $compteur + 1)
+        done
+        nbLigne=$(grep $1: infoUtilisateurs.txt | wc -l)
+        user=$(echo $ligne | cut -f1 -d":")
+        if [[ $nbLigne -eq 1 ]]; then
+            if [[ $(echo $* | wc -w) = 1 ]]; then
+                ajouterDescription $1
+            fi
+        else
+            echo "L'utilisateur $1 est inconnu"
+        fi
+    else
+        echo "Vous n'avez pas encore ajouté des utilisateurs à votre réseau !"
     fi
-else
-    echo "L'utilisateur $1 est inconnu"
-fi
-else
-    echo "Vous n'avez pas encore ajouté des utilisateurs à votre réseau !"
-fi
 
 }
 function createVirtualMachine {
@@ -212,13 +212,54 @@ function removeVirtualMachine {
         echo "Nom de machine incorrect"
     fi
 }
-function connect {
-    echo "Focntion connect"
+function modeConnect {
+  while [[ true ]]; do
+    read -p "$1@$2> " line
+    cmd=$(echo $line | cut -f1 -d" ")
+    case $cmd in
+        host )
+action=$(echo $line | cut -f2 -d" ")
+machineName=$(echo $line | cut -f3 -d" ")
+host $action $machineName ;;
+finger )
+finger 
+;;
+test )
+ftest
+;;
+users )
+action=$(echo $line | cut -f2 -d" ")
+userName=$(echo $line | cut -f3 -d" ")
+machineName=$(echo $line | cut -f4 -d" ")
+password=$(echo $line | cut -f5 -d" ")
+users $action $userName $machineName $password
+;;
+"" ) #Juste pour un meilleur effet visuel
+;;
+* )
+echo "Commande inconnue"
+;;
+esac
+done
 }
 if [[ ! -z $1 && $1 == "-admin" ]]; then
     admin
 elif [[ ! -z $1 && $1 == "-connect" ]]; then
-    connect
+    if [[ $(echo $* | wc -w) = 3 && -d $3 ]]; then
+    retourGrep=$(grep "$2 $3" $3/users)
+    if [[ ! -z $retourGrep ]]; then
+        password=$(echo $retourGrep | cut -f3 -d' ')
+        read -s -p "Entrez votre mot de passe : " motDePasse
+        if [[ $motDePasse = $password ]]; then
+            echo "SUCESS"
+            modeConnect $2 $3
+        else
+            echo "Mot de passe incorrect"
+        fi
+    else
+        echo "Utilisateur inconnu ou machine inconnu"
+    fi
+    fi
 else
     usage
 fi
