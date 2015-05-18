@@ -62,7 +62,7 @@ function ftest {
 }
 
 function addUser {
-if [[ ! -d $acess ]]; then
+    if [[ ! -d $acess ]]; then
      mkdir $acess
  fi 
     if [[ ! -z $1 && ! -z $2 && ! -z $3  ]]; then #test si la chaine est non vide
@@ -106,16 +106,16 @@ function removeUser {
                 if [[ ! -s $acess/$1  ]]; then
                     rm $acess/$1
                 fi
-            echo "Accès de l'utilisateur $1 supprimé de la machine $2"
+                echo "Accès de l'utilisateur $1 supprimé de la machine $2"
+            else
+                echo "L'utilisateur n'est pas associé à cette machine"
+            fi
         else
-            echo "L'utilisateur n'est pas associé à cette machine"
+            echo "La machine $2 n'est pas encore créer ou il n'y a pas encore d'utilisateur autorisé à l'utiliser"
         fi
-    else
-        echo "La machine $2 n'est pas encore créer ou il n'y a pas encore d'utilisateur autorisé à l'utiliser"
+    else 
+        echo "Une valeur n'est pas renseigné !"
     fi
-else 
-    echo "Une valeur n'est pas renseigné !"
-fi
 }
 function admin {
     echo "Commande administrateur"
@@ -218,14 +218,14 @@ function removeVirtualMachine {
     fi
 }
 function rhost {
-    echo "Liste des machines connectées : "
+    echo -e "\nListe des machines connectées : "
     liste=""
     for i in $(ls); do
-        if [[ -d $i ]]; then
+        if [[ -d $i && $i != "acess" ]]; then
             liste="$liste $i"
         fi
     done
-    echo $liste
+    echo -e "\n$liste"
 }
 function finger {
     grep "juju" infoUtilisateurs.txt | cut -f2 -d':'
@@ -246,6 +246,23 @@ function passwd {
         fi
     fi
 }
+
+function su {
+ retourGrep=$(grep "$1" shadow)
+ if [[ ! -z $retourGrep ]]; then
+    password=$(echo $retourGrep | cut -f2 -d':')
+    read -s -p "Entrez le mot de passe : " motDePasse
+    if [[ $motDePasse = $password ]]; then
+        echo "SUCESS"
+        modeConnect $1 $2
+    else
+        echo "Mot de passe incorrect"
+    fi
+else
+    echo "Utilisateur inconnu"
+fi
+}
+
 function modeConnect {
   while [[ true ]]; do
     read -p "$1@$2> " line
@@ -256,6 +273,11 @@ rhost
 ;;
 finger )
 finger 
+;;
+su )
+userName=$(echo $line | cut -f2 -d" ")
+echo "Nom de la machine $machineName"
+su $userName $2
 ;;
 test )
 ftest
