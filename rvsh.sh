@@ -11,6 +11,7 @@
 #git push bob master
 
 programname=$0
+acess=acess
 
 function usage {
     echo "usage: $programname [-option] [nom_machine] [nom_utlisateur]"
@@ -59,14 +60,21 @@ function ftest {
         echo $(pwd)
     fi
 }
-function addUser { 
+
+function addUser {
+if [[ ! -d $acess ]]; then
+     mkdir $acess
+ fi 
     if [[ ! -z $1 && ! -z $2 && ! -z $3  ]]; then #test si la chaine est non vide
         if [[ -d $2 ]]; then
-            if [[ -f $2/users ]]; then
-                grep -q "$1 $2" $2/users
+            if [[ -f $acess/$1 ]]; then
+                grep -q "$2" $acess/$1
             fi
-            if [[ ! -f $2/users || $? -ne 0 ]]; then
-                echo "$1 $2 $3" >> $2/users
+            if [[ ! -f $acess/$1 || $? -ne 0 ]]; then
+                echo "$2" >> $acess/$1
+                if [[ ! -f shadow || $(grep $1 shadow | wc -l) -eq 0 ]]; then
+                    echo "$1:$3" >> shadow
+                fi
                 if [ -e infoUtilisateurs.txt ]; then
                     if [[ $(grep $1 infoUtilisateurs.txt | wc -l) -ne 1 ]]; then
                         pointv=":"
@@ -74,7 +82,6 @@ function addUser {
                     fi
                 else
                     pointv=":"
-                    echo "hoho"
                     echo "$1$pointv" >> infoUtilisateurs.txt
                     
                 fi
@@ -91,16 +98,14 @@ function addUser {
 }
 function removeUser {
     if [[ ! -z $1 && ! -z $2 ]]; then #test si la chaine est non vide
-        if [[ -d $2 && -e $2/users ]]; then
-            lineNumber=$(grep -n "$1 $2" $2/users | cut -f1 -d':')
+        if [[ -d $2 && -e $acess/$1 ]]; then
+            lineNumber=$(grep -n "$2" $acess/$1 | cut -f1 -d':')
             if [ ! -z $lineNumber ]; then
                 d="d"
-                sed -i -e "$lineNumber$d" $2/users 
-            #sed -i -e "/$1/d" infoUtilisateurs.txt
-            # nbLigneFichierInfoU=$(wc -l < infoUtilisateurs.txt )
-            # if [[ $nbLigneFichierInfoU -eq 0 ]]; then
-            #    rm infoUtilisateurs.txt
-            #fi
+                sed -i -e "$lineNumber$d" $acess/$1
+                if [[ ! -s $acess/$1  ]]; then
+                    rm $acess/$1
+                fi
             echo "Accès de l'utilisateur $1 supprimé de la machine $2"
         else
             echo "L'utilisateur n'est pas associé à cette machine"
@@ -222,6 +227,25 @@ function rhost {
     done
     echo $liste
 }
+function finger {
+    grep "juju" infoUtilisateurs.txt | cut -f2 -d':'
+}
+function passwd {
+    echo "Changing password for $1 ."
+    read -s -p "Tapez votre nouveau mot de passe " passwd1
+    read -s -p "Tapez une seconde fois votre mot de passe " passwd2
+    if [[ $passwd1 = $passwd2 ]]; then
+        grep -n "$1" shadow
+        lineNumber=$(grep -n "$1" shadow | cut -f1 -d':')
+        if [ ! -z $lineNumber ]; then
+            d="d"
+            sed -i -e "$lineNumber$d" shadow
+            echo "$1:$passwd1" >> shadow
+        else
+            echo "erreur"
+        fi
+    fi
+}
 function modeConnect {
   while [[ true ]]; do
     read -p "$1@$2> " line
@@ -235,6 +259,10 @@ finger
 ;;
 test )
 ftest
+;;
+passwd )
+userName=$
+passwd $1
 ;;
 users )
 action=$(echo $line | cut -f2 -d" ")
@@ -255,19 +283,21 @@ if [[ ! -z $1 && $1 == "-admin" ]]; then
     admin
 elif [[ ! -z $1 && $1 == "-connect" ]]; then
     if [[ $(echo $* | wc -w) = 3 && -d $3 ]]; then
-    retourGrep=$(grep "$2 $3" $3/users)
-    if [[ ! -z $retourGrep ]]; then
-        password=$(echo $retourGrep | cut -f3 -d' ')
-        read -s -p "Entrez votre mot de passe : " motDePasse
-        if [[ $motDePasse = $password ]]; then
-            echo "SUCESS"
-            modeConnect $2 $3
+        retourGrep=$(grep $2 shadow)
+        if [[ ! -z $retourGrep ]]; then
+            password=$(echo $retourGrep | cut -f2 -d':')
+            read -s -p "Entrez votre mot de passe : " motDePasse
+            if [[ $motDePasse = $password ]]; then
+                echo "SUCESS"
+                modeConnect $2 $3
+            else
+                echo "Mot de passe incorrect"
+            fi
         else
-            echo "Mot de passe incorrect"
+            echo "Utilisateur inconnu ou machine inconnu"
         fi
     else
-        echo "Utilisateur inconnu ou machine inconnu"
-    fi
+        usage
     fi
 else
     usage
