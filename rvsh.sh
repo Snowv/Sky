@@ -9,9 +9,12 @@
 #git merge bob/master
 #git pull alice master
 #git push bob master
+Red='\033[1;31m'
 
 programname=$0
 acess=acess
+utilisateurCourant=""
+machineCourante=""
 
 function usage {
     echo "usage: $programname [-option] [nom_machine] [nom_utlisateur]"
@@ -49,6 +52,7 @@ else
 fi
 }
 function ftest {
+    renseignerConnection
     fichier=infoUtilisateurs.txt
     path=$(pwd)
     nomComplet=$path/$fichier
@@ -117,10 +121,24 @@ function removeUser {
         echo "Une valeur n'est pas renseigné !"
     fi
 }
+
+function who {
+    while read ligne  
+    do  
+    user=$(echo $ligne | cut -f1 -d" ")
+    machine=$(echo $ligne | cut -f2 -d" ")
+    if [[ $1 = $user && $2 = $machine ]]; then
+          echo $ligne | cut -f1,3-7 -d" "
+      fi  
+    done < status
+}
+
 function admin {
     echo "Commande administrateur"
     while [[ true ]]; do
-        read -p ">rvsh " line
+        echo -e "${Red}>rvsh \c"
+        tput sgr0 #  Réinitialise les couleurs à la normale."
+        read line
         cmd=$(echo $line | cut -f1 -d" ")
         case $cmd in
             host )
@@ -133,6 +151,9 @@ afinger $userName
 ;;
 test )
 ftest
+;;
+clear )
+clear
 ;;
 users )
 action=$(echo $line | cut -f2 -d" ")
@@ -246,6 +267,16 @@ function passwd {
         fi
     fi
 }
+# trap ctrl-c and call ctrl_c()
+trap ctrl_c INT
+
+function ctrl_c() {
+        echo "Capture du Signal CTRL+C"
+        if [[ ! -z utilisateurCourant && ! -z machineCourante ]]; then
+            #statements
+        fi
+        exit
+}
 
 function su {
  retourGrep=$(grep "$1" shadow)
@@ -254,6 +285,7 @@ function su {
     read -s -p "Entrez le mot de passe : " motDePasse
     if [[ $motDePasse = $password ]]; then
         echo "SUCESS"
+        renseignerDeconnection $3 $2
         modeConnect $1 $2
     else
         echo "Mot de passe incorrect"
@@ -262,10 +294,23 @@ else
     echo "Utilisateur inconnu"
 fi
 }
-
+function renseignerConnection {
+    date=$(date | cut -f1 -d',')
+    heure=$(date | cut -f5 -d' ')
+    echo $1 $2 $date $heure >> status 
+}
+function renseignerDeconnection {
+    lineNumber=$(grep -n "$1 $2" status | cut -f1 -d':')
+    if [ ! -z $lineNumber ]; then
+    d="d"
+    sed -i -e "$lineNumber$d" status
+    fi
+}
 function modeConnect {
   while [[ true ]]; do
-    read -p "$1@$2> " line
+    echo -e "${Red}$1@$2> \c"
+    tput sgr0 #  Réinitialise les couleurs à la normale."
+    read line
     cmd=$(echo $line | cut -f1 -d" ")
     case $cmd in
         rhost )
@@ -277,10 +322,16 @@ finger
 su )
 userName=$(echo $line | cut -f2 -d" ")
 echo "Nom de la machine $machineName"
-su $userName $2
+su $userName $2 $1
 ;;
 test )
 ftest
+;;
+who )
+who $1 $2
+;;
+clear )
+clear
 ;;
 passwd )
 userName=$
@@ -311,6 +362,7 @@ elif [[ ! -z $1 && $1 == "-connect" ]]; then
             read -s -p "Entrez votre mot de passe : " motDePasse
             if [[ $motDePasse = $password ]]; then
                 echo "SUCESS"
+                renseignerConnection $2 $3
                 modeConnect $2 $3
             else
                 echo "Mot de passe incorrect"
