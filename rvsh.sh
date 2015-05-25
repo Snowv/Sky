@@ -9,6 +9,20 @@
 #git merge bob/master
 #git pull alice master
 #git push bob master
+
+#Exemple pour Rob' Stark
+# ./rvsh.sh -admin #Lance programme en mode administrateur
+    #Tu peux utiliser les commandes host, users, clear, afinger
+    #exemple: 
+    #host create pc5
+    #host remove pc6
+    #users add jojo pc5 aaa #ajoute l'utilisateur jojo à la machine pc5 avec le mdp aaa
+    #users remove jojo pc5 #supprime l'acces à l'utilisateur jojo sur le pc5
+    #afinger jojo #commande pour ajouter une desciption à l'utilisateur jojo
+    #clear #similaire au clear de linux
+#./rvsh.sh -connect jojo pc1 #lance le programme en mode utilisateur 
+
+
 Red='\033[1;31m'
 
 programname=$0
@@ -273,7 +287,8 @@ trap ctrl_c INT
 function ctrl_c() {
         echo "Capture du Signal CTRL+C"
         if [[ ! -z utilisateurCourant && ! -z machineCourante ]]; then
-            #statements
+            echo "Personne à déconnecter"
+            exit 0
         fi
         exit
 }
