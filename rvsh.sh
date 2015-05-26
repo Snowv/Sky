@@ -10,7 +10,7 @@
 #git pull alice master
 #git push bob master
 
-#Exemple pour Rob' Stark
+#Exemple pour Rob' 
 # ./rvsh.sh -admin #Lance programme en mode administrateur
     #Tu peux utiliser les commandes host, users, clear, afinger
     #exemple: 
@@ -22,6 +22,8 @@
     #clear #similaire au clear de linux
 #./rvsh.sh -connect jojo pc1 #lance le programme en mode utilisateur 
 
+#mot de passe
+#commande su
 
 Red='\033[1;31m'
 
@@ -81,8 +83,8 @@ function ftest {
 
 function addUser {
     if [[ ! -d $acess ]]; then
-     mkdir $acess
- fi 
+       mkdir $acess
+   fi 
     if [[ ! -z $1 && ! -z $2 && ! -z $3  ]]; then #test si la chaine est non vide
         if [[ -d $2 ]]; then
             if [[ -f $acess/$1 ]]; then
@@ -142,9 +144,9 @@ function who {
     user=$(echo $ligne | cut -f1 -d" ")
     machine=$(echo $ligne | cut -f2 -d" ")
     if [[ $1 = $user && $2 = $machine ]]; then
-          echo $ligne | cut -f1,3-7 -d" "
-      fi  
-    done < status
+      echo $ligne | cut -f1,3-7 -d" "
+  fi  
+done < status
 }
 
 function admin {
@@ -263,7 +265,7 @@ function rhost {
     echo -e "\n$liste"
 }
 function finger {
-    grep "juju" infoUtilisateurs.txt | cut -f2 -d':'
+    grep $1 infoUtilisateurs.txt | cut -f2 -d':'
 }
 function passwd {
     echo "Changing password for $1 ."
@@ -285,28 +287,30 @@ function passwd {
 trap ctrl_c INT
 
 function ctrl_c() {
-        echo "Capture du Signal CTRL+C"
-        if [[ ! -z utilisateurCourant && ! -z machineCourante ]]; then
-            echo "Personne à déconnecter"
-            exit 0
-        fi
-        exit
+    echo "Capture du Signal CTRL+C"
+    if [[ ! -z utilisateurCourant && ! -z machineCourante ]]; then
+        echo "Personne à déconnecter"
+        exit $?
+    fi
+    exit $?
 }
 
 function su {
- retourGrep=$(grep "$1" shadow)
- if [[ ! -z $retourGrep ]]; then
-    password=$(echo $retourGrep | cut -f2 -d':')
-    read -s -p "Entrez le mot de passe : " motDePasse
-    if [[ $motDePasse = $password ]]; then
-        echo "SUCESS"
-        renseignerDeconnection $3 $2
-        modeConnect $1 $2
-    else
-        echo "Mot de passe incorrect"
+    if [[ ! -z $(grep $2 acess/$1) ]]; then
+       retourGrep=$(grep "$1" shadow)
+       if [[ ! -z $retourGrep ]]; then
+        password=$(echo $retourGrep | cut -f2 -d':')
+        read -s -p "Entrez le mot de passe : " motDePasse
+        if [[ $motDePasse = $password ]]; then
+            echo "SUCESS"
+            renseignerDeconnection $3 $2
+            modeConnect $1 $2
+        else
+            echo "Mot de passe incorrect"
+        fi
     fi
 else
-    echo "Utilisateur inconnu"
+    echo "Vous ne pouvez pas vous authentifier sur cette machine !"
 fi
 }
 function renseignerConnection {
@@ -316,9 +320,9 @@ function renseignerConnection {
 }
 function renseignerDeconnection {
     lineNumber=$(grep -n "$1 $2" status | cut -f1 -d':')
-    if [ ! -z $lineNumber ]; then
-    d="d"
-    sed -i -e "$lineNumber$d" status
+    if [[ ! -z $lineNumber ]]; then
+        d="d"
+        sed -i -e "$lineNumber$d" status
     fi
 }
 function modeConnect {
@@ -332,11 +336,10 @@ function modeConnect {
 rhost
 ;;
 finger )
-finger 
+finger $1
 ;;
 su )
 userName=$(echo $line | cut -f2 -d" ")
-echo "Nom de la machine $machineName"
 su $userName $2 $1
 ;;
 test )
