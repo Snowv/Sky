@@ -288,9 +288,13 @@ trap ctrl_c INT
 
 function ctrl_c() {
     echo "Capture du Signal CTRL+C"
-    if [[ ! -z utilisateurCourant && ! -z machineCourante ]]; then
-        echo "Personne à déconnecter"
+    if [[ -z utilisateurCourant && -z machineCourante ]]; then
         exit $?
+    else
+        #utilisateurCourant=""
+#       machineCourante=""
+        echo "Déconnexion !"
+        sed -i "/$utilisateurCourant $machineCourante/d" status
     fi
     exit $?
 }
@@ -326,6 +330,8 @@ function renseignerDeconnection {
     fi
 }
 function modeConnect {
+    machineCourante=$2
+    utilisateurCourant=$1
   while [[ true ]]; do
     echo -e "${Red}$1@$2> \c"
     tput sgr0 #  Réinitialise les couleurs à la normale."
@@ -374,6 +380,7 @@ if [[ ! -z $1 && $1 == "-admin" ]]; then
     admin
 elif [[ ! -z $1 && $1 == "-connect" ]]; then
     if [[ $(echo $* | wc -w) = 3 && -d $3 ]]; then
+        if [[ -e "acess/$2" && ! -z $(grep $3 acess/$2) ]]; then
         retourGrep=$(grep $2 shadow)
         if [[ ! -z $retourGrep ]]; then
             password=$(echo $retourGrep | cut -f2 -d':')
@@ -385,6 +392,7 @@ elif [[ ! -z $1 && $1 == "-connect" ]]; then
             else
                 echo "Mot de passe incorrect"
             fi
+        fi
         else
             echo "Utilisateur inconnu ou machine inconnu"
         fi
