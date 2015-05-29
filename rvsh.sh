@@ -38,7 +38,7 @@ function usage {
     echo "  -admin      Cette commande permet à l’administrateur de gérer la liste des machines connectées au réseau virtuel"
     echo "              et la liste des utilisateurs. Lorsque que la commande admin est saisi il n'y a pas besoin de saisir le nom d'utilisateur"
     echo "              et le nom de la machine"
-    echo "  -help       affiche de l'aide"
+    echo "  -help       affiche de l'aide Yyoyo abricot"
     exit 1
 }
 function usage_host {
