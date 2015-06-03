@@ -67,24 +67,22 @@ else
     usage_users
 fi
 }
-function ftest {
-    renseignerConnection
-    fichier=infoUtilisateurs.txt
-    path=$(pwd)
-    nomComplet=$path/$fichier
-    echo $t
-    if [ -f $nomComplet ]; then
-        echo "Le fichier existe"
+
+function write {
+    message=$(echo $2 | awk '{for (i=3;i<=NF;i++) printf $i" ";}')
+    destinataire=$(echo $1 | cut -d"@" -f1)
+    machine=$(echo $1 | cut -d"@" -f2)
+    terminal=$(grep "$destinataire $machine" status | head -n 1 | cut -d" " -f8)
+    if [[ -z $terminal ]]; then
+        echo "Cet utilisateur n'est pas connecté !"
     else
-        echo "Le fichier n'existe pas"
-        echo $(pwd)
+        echo $message | /usr/bin/write $USER $terminal 
     fi
 }
-
 function addUser {
     if [[ ! -d $acess ]]; then
-       mkdir $acess
-   fi 
+     mkdir $acess
+ fi 
     if [[ ! -z $1 && ! -z $2 && ! -z $3  ]]; then #test si la chaine est non vide
         if [[ -d $2 ]]; then
             if [[ -f $acess/$1 ]]; then
@@ -288,26 +286,25 @@ trap ctrl_c INT
 
 function ctrl_c() {
     echo "Capture du Signal CTRL+C"
-    if [[ -z utilisateurCourant && -z machineCourante ]]; then
-        exit $?
-    else
+    if [[ ! -z utilisateurCourant && ! -z machineCourante ]]; then
         #utilisateurCourant=""
 #       machineCourante=""
-        echo "Déconnexion !"
-        sed -i "/$utilisateurCourant $machineCourante/d" status
-    fi
-    exit $?
+echo "Déconnexion !"
+sed -i "/$utilisateurCourant $machineCourante/d" status
+fi
+exit $?
 }
 
 function su {
     if [[ ! -z $(grep $2 acess/$1) ]]; then
-       retourGrep=$(grep "$1" shadow)
-       if [[ ! -z $retourGrep ]]; then
+     retourGrep=$(grep "$1" shadow)
+     if [[ ! -z $retourGrep ]]; then
         password=$(echo $retourGrep | cut -f2 -d':')
         read -s -p "Entrez le mot de passe : " motDePasse
         if [[ $motDePasse = $password ]]; then
             echo "SUCESS"
             renseignerDeconnection $3 $2
+            renseignerConnection $1 $2
             modeConnect $1 $2
         else
             echo "Mot de passe incorrect"
@@ -320,7 +317,7 @@ fi
 function renseignerConnection {
     date=$(date | cut -f1 -d',')
     heure=$(date | cut -f5 -d' ')
-    echo $1 $2 $date $heure >> status 
+    echo $1 $2 $date $heure $(tty) >> status 
 }
 function renseignerDeconnection {
     lineNumber=$(grep -n "$1 $2" status | cut -f1 -d':')
@@ -329,13 +326,20 @@ function renseignerDeconnection {
         sed -i -e "$lineNumber$d" status
     fi
 }
+
 function modeConnect {
     machineCourante=$2
     utilisateurCourant=$1
-  while [[ true ]]; do
-    echo -e "${Red}$1@$2> \c"
+    while [[ true ]]; do
+        echo -e "${Red}$1@$2> \c"
+            machineCourante=$2
+            utilisateurCourant=$1
+        if [[ -z $(grep "$1 $2" status) ]]; then
+            renseignerConnection $1 $2
+        fi
     tput sgr0 #  Réinitialise les couleurs à la normale."
     read line
+
     cmd=$(echo $line | cut -f1 -d" ")
     case $cmd in
         rhost )
@@ -357,9 +361,19 @@ who $1 $2
 clear )
 clear
 ;;
+exit )
+renseignerDeconnection $utilisateurCourant $machineCourante
+machineCourante=$2
+utilisateurCourant=$1
+break
+;;
 passwd )
 userName=$
 passwd $1
+;;
+write )
+destinataireMachine=$(echo $line | cut -f2 -d" ")
+write "$destinataireMachine" "$line"
 ;;
 users )
 action=$(echo $line | cut -f2 -d" ")
@@ -381,18 +395,18 @@ if [[ ! -z $1 && $1 == "-admin" ]]; then
 elif [[ ! -z $1 && $1 == "-connect" ]]; then
     if [[ $(echo $* | wc -w) = 3 && -d $3 ]]; then
         if [[ -e "acess/$2" && ! -z $(grep $3 acess/$2) ]]; then
-        retourGrep=$(grep $2 shadow)
-        if [[ ! -z $retourGrep ]]; then
-            password=$(echo $retourGrep | cut -f2 -d':')
-            read -s -p "Entrez votre mot de passe : " motDePasse
-            if [[ $motDePasse = $password ]]; then
-                echo "SUCESS"
-                renseignerConnection $2 $3
-                modeConnect $2 $3
-            else
-                echo "Mot de passe incorrect"
+            retourGrep=$(grep $2 shadow)
+            if [[ ! -z $retourGrep ]]; then
+                password=$(echo $retourGrep | cut -f2 -d':')
+                read -s -p "Entrez votre mot de passe : " motDePasse
+                if [[ $motDePasse = $password ]]; then
+                    echo "SUCESS"
+                    renseignerConnection $2 $3
+                    modeConnect $2 $3
+                else
+                    echo "Mot de passe incorrect"
+                fi
             fi
-        fi
         else
             echo "Utilisateur inconnu ou machine inconnu"
         fi
